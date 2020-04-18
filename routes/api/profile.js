@@ -11,10 +11,9 @@ const { check, validationResult } = require("express-validator");
 router.get("/me", auth, async (req, res) => {
   try {
     // Queries Profile db using user id, and populated name and avatar fields from User(user) model
-    const profile = await Profile.findById({ user: user.id }).populate("user", [
-      "name",
-      "avatar",
-    ]);
+    const profile = await Profile.findById({
+      user: req.user.id,
+    }).populate("user", ["name", "avatar"]);
 
     if (!profile) {
       res.status(400).json({ msg: "User not found" });
@@ -40,7 +39,7 @@ router.post(
   ],
   async (req, res) => {
     const errors = validationResult(req);
-    if (errors) {
+    if (!errors.isEmpty()) {
       return res.status(500).json({ errors: errors.array() });
     }
 
@@ -102,27 +101,21 @@ router.post(
     if (twitter) {
       profileFields.social.twitter = twitter;
     }
+    if (linkedin) {
+      profileFields.social.linkedin = linkedin;
+    }
 
     try {
-      let profile = Profile.findOne({ user: req.user.id });
-      if (profile) {
-        // Find and update profile
-        profile = await Profile.findOneAndUpdate(
-          { user: req.user.id },
-          { $set: profileFields },
-          { new: true }
-        );
-        return res.json({profile});
-      }
-    //   If no profile in db, create one
-    profile = new Profile({profileFields});
-    await profile.save();
-    return res.json(profile);
-
-
+      // Use upser function to create or update
+      let profile = await Profile.findOneAndUpdate(
+        { user: req.user.id },
+        { $set: profileFields },
+        { new: true, upsert: true }
+      );
+      res.json(profile);
     } catch (error) {
-        console.log(error.msg);
-        res.status(500).send('Server Error');
+      console.error(error.message);
+      res.status(500).send("Server error, check logs")
     }
   }
 );
