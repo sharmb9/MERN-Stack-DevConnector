@@ -72,7 +72,7 @@ router.post(
       // save the user
       await user.save();
 
-      //   Gets the user payload, identified by the user id
+      //   assign the user payload for the token, identified by the user id
       const payload = {
         user: {
           id: user.id
