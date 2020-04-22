@@ -10,17 +10,18 @@ const { check, validationResult } = require("express-validator");
 // @access Private
 router.get("/me", auth, async (req, res) => {
   try {
-    // Queries Profile db using user id, and populated name and avatar fields from User(user) model
-    const profile = await Profile.findById({
+    const profile = await Profile.findOne({
       user: req.user.id,
-    }).populate("user", ["name", "avatar"]);
+    });
 
     if (!profile) {
-      res.status(400).json({ msg: "User not found" });
+      return res.status(400).json({ msg: "There is no profile for this user" });
     }
-    res.send(profile);
-  } catch (error) {
-    console.log(error.msg);
+
+    // only populate from user document if profile exists
+    res.json(profile.populate("user", ["name", "avatar"]));
+  } catch (err) {
+    console.error(err.message);
     res.status(500).send("Server Error");
   }
 });
@@ -115,9 +116,42 @@ router.post(
       res.json(profile);
     } catch (error) {
       console.error(error.message);
-      res.status(500).send("Server error, check logs")
+      res.status(500).send("Server error, check logs");
     }
   }
 );
+
+// @route GET api/profile
+// @desc Gets all profiles
+// @access Public
+router.get("/", async (req, res) => {
+  try {
+    // Queries all the profiles in collection and populates them with name,avatar from user collection
+    const profiles = await Profile.find().populate("user", ["name", "avatar"]);
+    res.json(profiles);
+  } catch (error) {
+    console.log(error.message);
+    res.status(500).send("Server error, check logs");
+  }
+});
+
+// @route GET api/profile/user/:user_id
+// @desc Gets profile by USER ID
+// @access Public
+router.get('/user/:user_id', async (req,res) => {
+  try{
+    const profile = await Profile.findOne({user: req.params.user_id}).populate("user",["name","avatar"]);
+    if(!profile){
+      return res.status(400).json("Profile not Found!");
+    }
+    res.json(profile);
+  } catch(error){
+    if(error.kind=='ObjectId'){
+      return res.status(400).json("Profile not Found!");
+    }
+    console.log(error.message);
+    res.status(500).json("Server error, check logs");
+  }
+})
 
 module.exports = router;
