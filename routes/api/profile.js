@@ -6,7 +6,7 @@ const User = require("../../models/User");
 const { check, validationResult } = require("express-validator");
 
 // @route GET api/profile/me
-// @desc TEST Get current user's profile
+// @desc  Get current user's profile
 // @access Private
 router.get("/me", auth, async (req, res) => {
   try {
@@ -152,6 +152,23 @@ router.get('/user/:user_id', async (req,res) => {
     console.log(error.message);
     res.status(500).json("Server error, check logs");
   }
+})
+
+// @route DELETE api/profile/
+// @desc Delete profile and user
+// @access Private
+router.delete("/", auth, async (req,res) => {
+  try {
+    // Delete profile
+    await Profile.findOneAndRemove({user: req.user.id});
+    // Delete user 
+    await User.findOneAndRemove({_id:req.user.id});
+    res.status(500).json({msg:"User deleted"});
+  } catch (error) {
+    console.log(error.message);
+    res.status(500).json({msg:"Server Error"});
+  }
+  
 })
 
 module.exports = router;
