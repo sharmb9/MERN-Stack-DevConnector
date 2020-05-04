@@ -8,11 +8,11 @@ const jwt = require("jsonwebtoken");
 const { check, validationResult } = require("express-validator");
 
 // @route GET api/auth
-// @desc TEST route
-// @access Public
+// @desc Get user info 
+// @access Private
 router.get("/", auth, async (req, res) => {
   try {
-    //   Query user from the db using current user id(check auth.js), excluding the user password
+    //   Query user from the db using current user id(check middleware/auth), excluding the user password
     const user = await User.findById(req.user.id).select("-password");
     res.json({ user });
   } catch (error) {
@@ -20,11 +20,14 @@ router.get("/", auth, async (req, res) => {
   }
 });
 
+// @route POST api/auth
+// @desc Login user and get auth token
+// @access Public
 router.post(
   "/",
   [
     // checks if email is valid
-    check("email", "Email is required").isEmail(),
+    check("email", "Please enter valid email").isEmail(),
     // checks if password is min 5 characters
     check("password", "Password is required").exists(),
   ],
