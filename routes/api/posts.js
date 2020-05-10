@@ -57,17 +57,41 @@ router.get("/:id", auth, async (req,res) => {
     // Finds all the posts and sorts by date(most recent first)
     const post = await Post.findById(req.params.id);
     if(!post){
-      return res.status(404).json("Posts not found for the user")
+      return res.status(404).json("Post not found")
     }
     res.json(post);
   } catch (error) {
       if(error.kind=='ObjectId'){
-        return res.status(404).json("Posts not found for the user")
+        return res.status(404).json("Post not found")
       }
       res.status(500).json("Server error, check logs");
       console.log(error.message);
   }
 });
+
+// @route Delete api/posts/
+// @desc Delete a post
+// @access private
+router.delete("/:id", auth, async (req,res) => {
+  try {
+    const post = await Post.findById(req.params.id);
+    if(!post){
+      return res.status(404).json("Post not found")
+    }
+    // Check if the post if by the auth user
+    if(post.user.id != req.user.id){
+      return res.status(401).json({msg:"User not authorised"});
+    }
+    await post.remove();
+    res.json({msg:"Post removed"})
+  } catch (error) {
+    if(error.kind=='ObjectId'){
+      return res.status(404).json("Post not found")
+    }
+    res.status(500).json("Server error, check logs");
+    console.log(error.message);
+  }
+})
 
 
 module.exports = router;
