@@ -105,7 +105,10 @@ router.put("/like/:id", auth, async (req, res) => {
     }
 
     // Check if the post has already been liked
-    if (post.likes.filter(like => like.user.toString() == req.user.id).length>0) {
+    if (
+      post.likes.filter((like) => like.user.toString() == req.user.id).length >
+      0
+    ) {
       // console.log(like.user.toString);
       return res.status(400).json({ msg: "Post already liked!" });
     }
@@ -127,7 +130,7 @@ router.put("/like/:id", auth, async (req, res) => {
 // @route PUT api/posts/unlike/:id
 // @desc Unlike a post
 // @access private
-router.put("/unlike/:id", auth, async (req, res) => {
+router.put("/unlike/:id", [auth], async (req, res) => {
   try {
     const post = await Post.findById(req.params.id);
 
@@ -136,18 +139,21 @@ router.put("/unlike/:id", auth, async (req, res) => {
     }
 
     // Check if the post has been liked by the user
-    if (post.likes.filter(like => like.user.toString() == req.user.id).length===0) {
+    if (
+      post.likes.filter((like) => like.user.toString() == req.user.id)
+        .length === 0
+    ) {
       // console.log(like.user.toString);
       return res.status(400).json({ msg: "Post not liked yet" });
     }
 
     // An array of users from like array
-    const users = post.likes.map(like => like.user.toString());
+    const users = post.likes.map((like) => like.user.toString());
     // Index of user to be removed
     const removeIndex = users.indexOf(req.user.id);
 
     // Remove the user from array of users (likes)
-    post.likes.splice(removeIndex,1);
+    post.likes.splice(removeIndex, 1);
 
     await post.save();
 
@@ -160,5 +166,47 @@ router.put("/unlike/:id", auth, async (req, res) => {
     console.log(error.message);
   }
 });
+
+// @route PUT api/posts/comment/
+// @desc Make a comment
+// @access private
+router.put(
+  "/comment/:id",
+  [auth, check("text", "Please enter the text for the comment").not().isEmpty()],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      res.status(400).json({ erros: errors.array() });
+    }
+    try {
+      const post = await Post.findById(req.params.id);
+
+      if (!post) {
+        return res.status(404).json("Post not found");
+      }
+
+      const user = await User.findById(req.user.id).select("-password");
+
+      const newComment = {
+        user: req.user.id,
+        name: user.name,
+        text: req.body.text,
+        avatar: user.avatar,
+      };
+
+      post.comments.unshift(newComment);
+
+      await post.save();
+
+      res.json(post.comments);
+    } catch (error) {
+      if (error.kind == "ObjectId") {
+        return res.status(404).json("Post not found");
+      }
+      res.status(500).json("Server error, check logs");
+      console.log(error.message);
+    }
+  }
+);
 
 module.exports = router;
