@@ -190,6 +190,7 @@ router.put(
 
       const user = await User.findById(req.user.id).select("-password");
 
+      // Doesn't create user property
       const newComment = {
         text: req.body.text,
         name: user.name,
@@ -234,6 +235,7 @@ router.delete("/comment/:id/:comment_id", auth, async (req, res) => {
       return res.status(404).json("Comment not found");
     }
 
+    // NOT WORKING
     // Make sure user is authorised to delete the comment
     if (comment.user.toString() !== req.user.id) {
       return res.status(404).json("User not authorised to delete the comment");
@@ -247,7 +249,7 @@ router.delete("/comment/:id/:comment_id", auth, async (req, res) => {
     // New comments array
     post.comments = comments;
 
-    await comments.save();
+    await post.save();
     res.json(post.comments);
   } catch (error) {
     if (error.kind == "ObjectId") {
